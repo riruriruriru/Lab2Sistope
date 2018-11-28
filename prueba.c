@@ -15,6 +15,40 @@ typedef struct Casilla{
 	
 	}Casilla;
 
+typedef struct Foton{
+	int x;
+	int y;
+	int distancia;
+	int distMax;
+	}Foton;
+
+void init_Foton(Foton *p, int row, int col, int dist, int distMax){
+	int r1, r2, r3;
+	r1 = random()%(row*dist);
+	r2 = random()%(col*dist);
+	r3 = random()%distMax;
+	p->x = r1;
+	p->y = r2;
+	p->distancia = r3;
+	p->distMax = distMax;
+	}
+void absorcion(Foton *p, int row, int col, int dist, Casilla **tablero){
+	int r1, r2, r3;
+	p->distMax = p->distMax-p->distancia;
+	r1 = random()%(row*dist);
+	r2 = random()%(col*dist);
+	r3 = random()%p->distMax;
+	tablero[p->x][p->y].data++;
+	p->x = r1;
+	p->y = r2;
+	p->distancia = r3;
+	
+	
+	}
+void difusion(Foton *p){
+	
+	}
+
 void getArguments(int argc, char *argv[], int *numHijos, int *flag){
 	int flags, opt;
 	char *aux3;
@@ -89,10 +123,13 @@ void printTabla(Casilla **tabla, int row, int col, int dist){
 	}
 int main(){
 	Casilla **tabla;
+	Foton *f;
+	f = (Foton*)malloc(sizeof(Foton));
 	darMemoria(&tabla, 5, 5);
 	initTabla(tabla, 5, 5, 2);
 	printTabla(tabla, 5, 5, 2);
-	
-	
+	init_Foton(f,5, 5, 2, 4);
+	printf("Posicion foton: (%d-%d)\n", f->x, f->y);
+	printf("Distancia foton %d\n", f->distancia);
 	return 0;
 }
