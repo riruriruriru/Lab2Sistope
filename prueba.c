@@ -6,27 +6,39 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <math.h>
 
 typedef struct Casilla{
-	int dist;
+	float dist;
 	int row;
 	int col;
 	int data;
+	float infX;
+	float supX;
+	float infY;
+	float supY;
 	
 	}Casilla;
 
 typedef struct Foton{
-	int x;
-	int y;
+	float x;
+	float y;
+	int coord_x;
+	int coord_y;
 	int distancia;
 	int distMax;
 	}Foton;
 
+float random_float( float min, float max ){
+    float range = rand() / (float) RAND_MAX; /* [0, 1.0] */
+    return min + range * (max - min);      /* [min, max] */
+	}
+
 void init_Foton(Foton *p, int row, int col, int dist, int distMax){
-	int r1, r2, r3;
-	r1 = random()%(row*dist);
-	r2 = random()%(col*dist);
-	r3 = random()%distMax;
+	float r1, r2, r3;
+	r1 = random_float(0, row*dist);
+	r2 = random_float(0, col*dist);
+	r3 = random_float(0, distMax);
 	p->x = r1;
 	p->y = r2;
 	p->distancia = r3;
@@ -38,7 +50,7 @@ void absorcion(Foton *p, int row, int col, int dist, Casilla **tablero){
 	r1 = random()%(row*dist);
 	r2 = random()%(col*dist);
 	r3 = random()%p->distMax;
-	tablero[p->x][p->y].data++;
+	tablero[p->coord_x][p->coord_y].data++;
 	p->x = r1;
 	p->y = r2;
 	p->distancia = r3;
@@ -99,15 +111,27 @@ void darMemoria(Casilla ***tabla, int row, int col){
 		}
 	
 	}
-void initTabla(Casilla **tabla, int row, int col, int dist){
+void initTabla(Casilla **tabla, int row, int col, float dist){
 	int i=0, j=0;
+	float alto, ancho;
+	alto = dist*row/2;
+	ancho = dist*col/2;
+	float iAlto = -alto, iAncho = -ancho;
+	printf("alto %f - ancho %f\n", alto, ancho);
 	for(i=0;i<row;i++){
-		for(j=0;j<row;j++){
+		for(j=0;j<col;j++){
 			tabla[i][j].dist = dist;
 			tabla[i][j].row = i;
 			tabla[i][j].col = j;
 			tabla[i][j].data = 0;
+			tabla[i][j].infX = iAncho;
+			tabla[i][j].supX = iAncho + dist;
+			tabla[i][j].infY = iAlto;
+			tabla[i][j].supY = iAlto + dist;
+			iAncho = iAncho + dist;
 			}
+			iAncho = -ancho;
+			iAlto = iAlto+dist;
 		
 		}
 	}
@@ -115,9 +139,13 @@ void printTabla(Casilla **tabla, int row, int col, int dist){
 	int i=0, j=0;
 	for(i = 0; i<row; i++){
 		for(j=0;j<col;j++){
-			printf("%d ", tabla[i][j].data);
+				
+			printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
+			//printf("[%f	%f]", tabla[i][j].infX, tabla[i][j].supX);
+			//printf("[	%f	]", tabla[i][j].infY);
 			}
-		printf("\n");
+			printf("\n");
+		
 		
 		}
 	}
@@ -125,11 +153,11 @@ int main(){
 	Casilla **tabla;
 	Foton *f;
 	f = (Foton*)malloc(sizeof(Foton));
-	darMemoria(&tabla, 5, 5);
-	initTabla(tabla, 5, 5, 2);
-	printTabla(tabla, 5, 5, 2);
+	darMemoria(&tabla, 4, 4);
+	initTabla(tabla, 4, 4, 1.5);
+	printTabla(tabla, 4, 4, 1.5);
 	init_Foton(f,5, 5, 2, 4);
-	printf("Posicion foton: (%d-%d)\n", f->x, f->y);
+	printf("Posicion foton: (%f-%f)\n", f->x, f->y);
 	printf("Distancia foton %d\n", f->distancia);
 	return 0;
 }
