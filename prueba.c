@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <math.h>
+#include <time.h>
 
 typedef struct Casilla{
 	float dist;
@@ -17,7 +18,8 @@ typedef struct Casilla{
 	float supX;
 	float infY;
 	float supY;
-	
+	int t_row;
+	int t_col;
 	}Casilla;
 
 typedef struct Foton{
@@ -25,7 +27,7 @@ typedef struct Foton{
 	float y;
 	int coord_x;
 	int coord_y;
-	int distancia;
+	float distancia;
 	int distMax;
 	}Foton;
 
@@ -34,15 +36,52 @@ float random_float( float min, float max ){
     return min + range * (max - min);      /* [min, max] */
 	}
 
-void init_Foton(Foton *p, int row, int col, int dist, int distMax){
-	float r1, r2, r3;
-	r1 = random_float(0, row*dist);
-	r2 = random_float(0, col*dist);
-	r3 = random_float(0, distMax);
-	p->x = r1;
-	p->y = r2;
+void assign_coord(Casilla **tabla, Foton *p){
+	int i = 0, j = 0;
+	for(i = 0; i<tabla[0][0].t_row; i++){
+		for(j = 0;j<tabla[0][0].t_col;j++){
+			if(p->x>=tabla[i][j].infX && p->x<=tabla[i][j].supX && p->y>=tabla[i][j].infY &&p->y>=tabla[i][j].supY){
+				p->coord_x = j;
+				p->coord_y = i;
+				printf("i-j -> %d %d\n", i, j);
+				//printf("j-i -> %d %d\n", j, i);
+				printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]\n", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
+				}
+			}
+		}
+	}
+	
+void vector_dist(Foton *p, Casilla **tabla){
+	float r1, r2, r3, r, rr, m;
+	time_t t;
+	srand((unsigned) time(&t));
+	r = (double)rand() / (double)RAND_MAX;
+	printf("random: %f\n", r);
+	srand((unsigned) time(&t));
+	r1 = cos(random());
+	r2 = sin(random());
+	m = sqrt(r1*r1 + r2*r2);
+	r1 = r1/m;
+	r2 = r2/m;
+	printf("modulo vector: %f\n", sqrt(r1*r1 + r2*r2));
+	printf("x: %f - y: %f\n", r1, r2);
+	rr = 1-r;
+	printf("1-r: %f\n", rr);
+	r3 = -(log(rr));
+	printf("log: %f\n", r3);
+	p->x = r1*r3;
+	p->y = r2*r3;
 	p->distancia = r3;
+	printf("vector final: %f --- %f\n", p->x, p->y);
+	}
+
+void init_Foton(Foton *p, int row, int col, int dist, int distMax){
+	p->x = 0;
+	p->y = 0;
+	p->distancia = 0;
 	p->distMax = distMax;
+	p->coord_x = 0;
+	p->coord_y = 0;
 	}
 void absorcion(Foton *p, int row, int col, int dist, Casilla **tablero){
 	int r1, r2, r3;
@@ -116,6 +155,7 @@ void initTabla(Casilla **tabla, int row, int col, float dist){
 	float alto, ancho;
 	alto = dist*row/2;
 	ancho = dist*col/2;
+	printf("radio: %f\n", alto);
 	float iAlto = -alto, iAncho = -ancho;
 	printf("alto %f - ancho %f\n", alto, ancho);
 	for(i=0;i<row;i++){
@@ -123,6 +163,8 @@ void initTabla(Casilla **tabla, int row, int col, float dist){
 			tabla[i][j].dist = dist;
 			tabla[i][j].row = i;
 			tabla[i][j].col = j;
+			tabla[i][j].t_row = row;
+			tabla[i][j].t_col = col;
 			tabla[i][j].data = 0;
 			tabla[i][j].infX = iAncho;
 			tabla[i][j].supX = iAncho + dist;
@@ -140,9 +182,10 @@ void printTabla(Casilla **tabla, int row, int col, int dist){
 	for(i = 0; i<row; i++){
 		for(j=0;j<col;j++){
 				
-			printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
+			//printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
 			//printf("[%f	%f]", tabla[i][j].infX, tabla[i][j].supX);
 			//printf("[	%f	]", tabla[i][j].infY);
+			printf("[%d %d]", i, j);
 			}
 			printf("\n");
 		
@@ -158,6 +201,8 @@ int main(){
 	printTabla(tabla, 4, 4, 1.5);
 	init_Foton(f,5, 5, 2, 4);
 	printf("Posicion foton: (%f-%f)\n", f->x, f->y);
-	printf("Distancia foton %d\n", f->distancia);
+	vector_dist(f, tabla);
+	printf("Distancia foton %f\n", f->distancia);
+	assign_coord(tabla, f);
 	return 0;
 }
