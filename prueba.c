@@ -8,7 +8,9 @@
 #include <pthread.h>
 #include <math.h>
 #include <time.h>
+#include <pthread.h>
 
+//FALTA COMPROBAR CUANDO UN FOTON SE SALE DE LA GRILLA 
 typedef struct Casilla{
 	float dist;
 	int row;
@@ -265,19 +267,31 @@ void printTabla(Casilla **tabla, int row, int col, int dist, int flag){
 				}
 		}
 	}
+	
+void *uwu(Foton *f){
+	printf("dentro de hebra %d\n", f->distMax);
+	return NULL;
+	}
+
 int main(int argc, char *argv[]){
 	Casilla **tabla;
 	Foton **f;
 	time_t t;
-	
-	int numFotones, distMax, x, y, flag;
+	pthread_t *hebras;
+	int numFotones, distMax, x, y, flag, cont=0;
 	float delta;
 	srand((unsigned) time(&t));
 	printf("antes get arguments\n");
-	getArguments(argc, argv, &numFotones, &distMax, &x, &y, &delta, &flag); 
-	f = (Foton**)malloc(numFotones*sizeof(Foton));
+	getArguments(argc, argv, &numFotones, &distMax, &x, &y, &delta, &flag);
+	hebras = (pthread_t*)malloc(numFotones*sizeof(pthread_t*)); 
+	f = (Foton**)malloc(numFotones*sizeof(Foton*));
 	for(int i=0;i<numFotones;i++){
 		f[i] = (Foton*)malloc(sizeof(Foton));
+		init_Foton(f[i], x, y, distMax);
+		}
+	while(cont<numFotones){
+		pthread_create(&hebras[cont], NULL, uwu, (void *)f[cont]);
+		cont++;
 		}
 	printf("despues de get arguments uwu \n");
 	darMemoria(&tabla, x, y);
