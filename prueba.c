@@ -275,9 +275,9 @@ int main(int argc, char *argv[]){
 	srand((unsigned) time(&t));
 	printf("antes get arguments\n");
 	getArguments(argc, argv, &numFotones, &distMax, &x, &y, &delta, &flag); 
-	f = (Foton*)malloc(numFotones*sizeof(Foton));
+	f = (Foton**)malloc(numFotones*sizeof(Foton));
 	for(int i=0;i<numFotones;i++){
-		(*f)[i] = (Foton)malloc(sizeof(Foton));
+		f[i] = (Foton*)malloc(sizeof(Foton));
 		}
 	printf("despues de get arguments uwu \n");
 	darMemoria(&tabla, x, y);
