@@ -40,7 +40,7 @@ void assign_coord(Casilla **tabla, Foton *p){
 	int i = 0, j = 0;
 	for(i = 0; i<tabla[0][0].t_row; i++){
 		for(j = 0;j<tabla[0][0].t_col;j++){
-			if(p->x>=tabla[i][j].infX && p->x<=tabla[i][j].supX && p->y>=tabla[i][j].infY &&p->y>=tabla[i][j].supY){
+			if(p->x>=tabla[i][j].infX && p->x<=tabla[i][j].supX && p->y>=tabla[i][j].infY &&p->y<=tabla[i][j].supY){
 				p->coord_x = j;
 				p->coord_y = i;
 				printf("i-j -> %d %d\n", i, j);
@@ -51,13 +51,15 @@ void assign_coord(Casilla **tabla, Foton *p){
 		}
 	}
 	
+
+
 void vector_dist(Foton *p, Casilla **tabla){
 	float r1, r2, r3, r, rr, m;
-	time_t t;
-	srand((unsigned) time(&t));
+	//time_t t;
+	//srand((unsigned) time(&t));
 	r = (double)rand() / (double)RAND_MAX;
 	printf("random: %f\n", r);
-	srand((unsigned) time(&t));
+	//srand((unsigned) time(&t));
 	r1 = cos(random());
 	r2 = sin(random());
 	m = sqrt(r1*r1 + r2*r2);
@@ -69,8 +71,9 @@ void vector_dist(Foton *p, Casilla **tabla){
 	printf("1-r: %f\n", rr);
 	r3 = -(log(rr));
 	printf("log: %f\n", r3);
-	p->x = r1*r3;
-	p->y = r2*r3;
+	printf("vector actual: %f --- %f\n", r1*r3, r2*r3);
+	p->x = r1*r3 + p->x;
+	p->y = r2*r3 + p->y;
 	p->distancia = r3;
 	printf("vector final: %f --- %f\n", p->x, p->y);
 	}
@@ -83,16 +86,11 @@ void init_Foton(Foton *p, int row, int col, int distMax){
 	p->coord_x = 0;
 	p->coord_y = 0;
 	}
-void absorcion(Foton *p, int row, int col, int dist, Casilla **tablero){
-	int r1, r2, r3;
+void absorcion(Foton *p, int row, int col, Casilla **tablero){
 	p->distMax = p->distMax-p->distancia;
-	r1 = random()%(row*dist);
-	r2 = random()%(col*dist);
-	r3 = random()%p->distMax;
 	tablero[p->coord_x][p->coord_y].data++;
-	p->x = r1;
-	p->y = r2;
-	p->distancia = r3;
+	vector_dist(p, tablero);
+	assign_coord(tablero, p);
 	
 	
 	}
@@ -112,7 +110,7 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 	float auxDelta;
 	flags = 0;
 	printf("dentro opt arg antes del while uwu\n");
-	while ((opt = getopt(argc, argv, "nLXYdb:")) != -1) {
+	while ((opt = getopt(argc, argv, "n:L:X:Y:d:b")) != -1) {
 		printf("dentro while\n");
 		strcpy(aux3,"\0");
 		printf("owo\n");
@@ -236,37 +234,65 @@ void initTabla(Casilla **tabla, int row, int col, float dist){
 		
 		}
 	}
-void printTabla(Casilla **tabla, int row, int col, int dist){
+void printTabla(Casilla **tabla, int row, int col, int dist, int flag){
 	int i=0, j=0;
-	for(i = 0; i<row; i++){
-		for(j=0;j<col;j++){
-				
-			//printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
-			//printf("[%f	%f]", tabla[i][j].infX, tabla[i][j].supX);
-			//printf("[	%f	]", tabla[i][j].infY);
-			printf("[%d %d]", i, j);
+	if(flag ==1){
+		for(i = 0; i<row; i++){
+			for(j=0;j<col;j++){
+					
+				//printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
+				//printf("[%f	%f]", tabla[i][j].infX, tabla[i][j].supX);
+				//printf("[	%f	]", tabla[i][j].infY);
+				printf("[%d %d]", i, j);
+				}
+				printf("\n");
+			
+			
+				}
 			}
-			printf("\n");
-		
-		
+	else{
+		for(i = 0; i<row; i++){
+			for(j=0;j<col;j++){
+					
+				//printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
+				//printf("[%f	%f]", tabla[i][j].infX, tabla[i][j].supX);
+				//printf("[	%f	]", tabla[i][j].infY);
+				printf("[%d]", tabla[i][j].data);
+				}
+				printf("\n");
+			
+			
+				}
 		}
 	}
 int main(int argc, char *argv[]){
 	Casilla **tabla;
-	Foton *f;
-	f = (Foton*)malloc(sizeof(Foton));
+	Foton **f;
+	time_t t;
+	
 	int numFotones, distMax, x, y, flag;
 	float delta;
+	srand((unsigned) time(&t));
 	printf("antes get arguments\n");
 	getArguments(argc, argv, &numFotones, &distMax, &x, &y, &delta, &flag); 
+	f = (Foton*)malloc(numFotones*sizeof(Foton));
+	for(int i=0;i<numFotones;i++){
+		(*f)[i] = (Foton)malloc(sizeof(Foton));
+		}
 	printf("despues de get arguments uwu \n");
 	darMemoria(&tabla, x, y);
 	initTabla(tabla, x, y, delta);
-	printTabla(tabla, x, y, delta);
-	init_Foton(f,x, y, distMax);
-	printf("Posicion foton: (%f-%f)\n", f->x, f->y);
-	vector_dist(f, tabla);
-	printf("Distancia foton %f\n", f->distancia);
-	assign_coord(tabla, f);
+	printTabla(tabla, x, y, delta, 1);
+	init_Foton(f[0],x, y, distMax);
+	printf("Posicion foton: (%f-%f)\n", f[0]->x, f[0]->y);
+	vector_dist(f[0], tabla);
+	printf("Distancia foton %f\n", f[0]->distancia);
+	assign_coord(tabla, f[0]);
+	for(int i = 0; i<3;i++){
+		//srand((unsigned) time(&t));
+		absorcion(f[0], x, y, tabla);
+		
+		}
+	printTabla(tabla, x, y, delta, 0);
 	return 0;
 }
