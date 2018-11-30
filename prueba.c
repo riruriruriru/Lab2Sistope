@@ -75,7 +75,7 @@ void vector_dist(Foton *p, Casilla **tabla){
 	printf("vector final: %f --- %f\n", p->x, p->y);
 	}
 
-void init_Foton(Foton *p, int row, int col, int dist, int distMax){
+void init_Foton(Foton *p, int row, int col, int distMax){
 	p->x = 0;
 	p->y = 0;
 	p->distancia = 0;
@@ -100,45 +100,104 @@ void difusion(Foton *p){
 	
 	}
 
-void getArguments(int argc, char *argv[], int *numHijos, int *flag){
+void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x, int *y, float *delta, int *flag){
 	int flags, opt;
 	char *aux3;
 	aux3 = malloc(10*sizeof(char));
-	if(argc <3){//si se ingresa un numero de argumentos menor a 3, se finaliza la ejecucion del programa
+	if(argc <7){//si se ingresa un numero de argumentos menor a 7, se finaliza la ejecucion del programa
 		printf("Se ingreso un numero incorrecto de argumentos\n");
 		exit(EXIT_FAILURE);
 		}
-	int nChild = -1;
+	int nFotones = -1, cX, cY, auxDist;
+	float auxDelta;
 	flags = 0;
-	while ((opt = getopt(argc, argv, "mh:")) != -1) {
-	   switch (opt) {
-	   case 'm'://se busca el flag -m, en caso de ser encontrado se setea el valor flags = 1, no se considera lo que se ingrese despues del flag -m
-		   flags = 1;
-		   break;
-	   case 'h': //se busca el flag -h
-		   nChild = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
-		   if(optarg!=0 && nChild==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
-				fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n", argv[0]);
-				exit(EXIT_FAILURE);
-			   }
-		   //printf("optarg: %s\n", optarg);
-		   break;
-	   default: /* '?' */
-		   fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n",
-				   argv[0]);
-		   exit(EXIT_FAILURE);
-	   }
+	printf("dentro opt arg antes del while uwu\n");
+	while ((opt = getopt(argc, argv, "nLXYdb:")) != -1) {
+		printf("dentro while\n");
+		strcpy(aux3,"\0");
+		printf("owo\n");
+		switch (opt) {
+			case 'b'://se busca el flag -b, en caso de ser encontrado se setea el valor flags = 1, no se considera lo que se ingrese despues del flag -m
+			   printf("caso b\n");
+			   flags = 1;
+			   break;
+			case 'n': //se busca el flag -n, cantidad de fotones
+			   printf("caso n, %s\n", optarg);
+			   nFotones = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
+			   if(optarg!=0 && nFotones==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
+					fprintf(stderr, "Uso correcto: %s [-n nfotones] [-b]\n", argv[0]);
+					exit(EXIT_FAILURE);
+				   }
+			   //printf("optarg: %s\n", optarg);
+			   break;
+			case 'L': //se busca el flag -L, distancia maxima foton
+			   printf("caso L\n");
+			   auxDist = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
+			   if(optarg!=0 && auxDist==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
+					fprintf(stderr, "Uso correcto: %s [-L distMax] [-b]\n", argv[0]);
+					exit(EXIT_FAILURE);
+				   }
+			   //printf("optarg: %s\n", optarg);
+			   break;
+			case 'X': //se busca el flag -X, dimension X de la grilla 
+			   printf("caso X\n");
+			   cX = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
+			   if(optarg!=0 && cX==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
+					fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n", argv[0]);
+					exit(EXIT_FAILURE);
+				   }
+			   //printf("optarg: %s\n", optarg);
+			   break;
+			case 'Y': //se busca el flag -h
+				printf("caso Y\n");
+			   cY = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
+			   if(optarg!=0 && cY==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
+					fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n", argv[0]);
+					exit(EXIT_FAILURE);
+				   }
+			   //printf("optarg: %s\n", optarg);
+			   break;
+			case 'd': //se busca el flag -d, delta entre casillas de la grilla
+				printf("caso d\n");
+				printf("%s\n", optarg);
+			   auxDelta = atof(optarg);//se parsea el argumento ingresado junto al flag -h a entero
+			   if(optarg!=0 && auxDelta==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
+					fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n", argv[0]);
+					exit(EXIT_FAILURE);
+				   }
+			   //printf("optarg: %s\n", optarg);
+			   break;
+		   default: /* '?' */
+			   fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n",
+					   argv[0]);
+			   exit(EXIT_FAILURE);
+		   }
 	}
 
 	if(flags==1){//si se encontro un flag -m, se setea la variable global flag = 1, respecto al scope del proceso principal
 		(*flag) = 1;
 		}
-	(*numHijos) = nChild; //se iguala la variable numHijos a nChild
-	if(nChild<0){
-		fprintf(stderr, "Usage: %s [-h nchild] [-m]\n", argv[0]); //si la cantidad de hijos es negativa, se retorna un error
+	(*numFotones) = nFotones; //se iguala la variable numHijos a nChild
+	(*distMax) = auxDist;
+	(*x) = cX;
+	(*y) = cY;
+	(*delta) = auxDelta;
+	if(nFotones<=0){
+		fprintf(stderr, "Usage: %s [-h nFotones] [-m]\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
 		exit(EXIT_FAILURE);
 		}
-
+	if(cX%2!=0 || cY%2 !=0){
+		fprintf(stderr, "Usage: %s [-h nFotones] [-m]\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
+		exit(EXIT_FAILURE);
+		}
+	if(auxDelta<=0){
+		fprintf(stderr, "Usage: %s [-h nFotones] [-m]\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
+		exit(EXIT_FAILURE);
+		}
+	if(auxDist<=0){
+		fprintf(stderr, "Usage: %s [-h nFotones] [-m]\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
+		exit(EXIT_FAILURE);
+		}
 
 }
 
@@ -192,14 +251,19 @@ void printTabla(Casilla **tabla, int row, int col, int dist){
 		
 		}
 	}
-int main(){
+int main(int argc, char *argv[]){
 	Casilla **tabla;
 	Foton *f;
 	f = (Foton*)malloc(sizeof(Foton));
-	darMemoria(&tabla, 4, 4);
-	initTabla(tabla, 4, 4, 1.5);
-	printTabla(tabla, 4, 4, 1.5);
-	init_Foton(f,5, 5, 2, 4);
+	int numFotones, distMax, x, y, flag;
+	float delta;
+	printf("antes get arguments\n");
+	getArguments(argc, argv, &numFotones, &distMax, &x, &y, &delta, &flag); 
+	printf("despues de get arguments uwu \n");
+	darMemoria(&tabla, x, y);
+	initTabla(tabla, x, y, delta);
+	printTabla(tabla, x, y, delta);
+	init_Foton(f,x, y, distMax);
 	printf("Posicion foton: (%f-%f)\n", f->x, f->y);
 	vector_dist(f, tabla);
 	printf("Distancia foton %f\n", f->distancia);
