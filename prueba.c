@@ -10,6 +10,8 @@
 #include <time.h>
 #include <pthread.h>
 
+
+
 //FALTA COMPROBAR CUANDO UN FOTON SE SALE DE LA GRILLA 
 typedef struct Casilla{
 	float dist;
@@ -33,12 +35,14 @@ typedef struct Foton{
 	int distMax;
 	}Foton;
 
+extern Casilla **tablaE = NULL;
+
 float random_float( float min, float max ){
     float range = rand() / (float) RAND_MAX; /* [0, 1.0] */
     return min + range * (max - min);      /* [min, max] */
 	}
 
-void assign_coord(Casilla **tabla, Foton *p){
+int assign_coord(Casilla **tabla, Foton *p){
 	int i = 0, j = 0;
 	for(i = 0; i<tabla[0][0].t_row; i++){
 		for(j = 0;j<tabla[0][0].t_col;j++){
@@ -48,9 +52,11 @@ void assign_coord(Casilla **tabla, Foton *p){
 				printf("i-j -> %d %d\n", i, j);
 				//printf("j-i -> %d %d\n", j, i);
 				printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]\n", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
+				return 1;
 				}
 			}
 		}
+	return 0;
 	}
 	
 
@@ -60,24 +66,24 @@ void vector_dist(Foton *p, Casilla **tabla){
 	//time_t t;
 	//srand((unsigned) time(&t));
 	r = (double)rand() / (double)RAND_MAX;
-	printf("random: %f\n", r);
+	//printf("random: %f\n", r);
 	//srand((unsigned) time(&t));
 	r1 = cos(random());
 	r2 = sin(random());
 	m = sqrt(r1*r1 + r2*r2);
 	r1 = r1/m;
 	r2 = r2/m;
-	printf("modulo vector: %f\n", sqrt(r1*r1 + r2*r2));
-	printf("x: %f - y: %f\n", r1, r2);
+	//printf("modulo vector: %f\n", sqrt(r1*r1 + r2*r2));
+	//printf("x: %f - y: %f\n", r1, r2);
 	rr = 1-r;
 	printf("1-r: %f\n", rr);
 	r3 = -(log(rr));
-	printf("log: %f\n", r3);
-	printf("vector actual: %f --- %f\n", r1*r3, r2*r3);
+	//printf("log: %f\n", r3);
+	//printf("vector actual: %f --- %f\n", r1*r3, r2*r3);
 	p->x = r1*r3 + p->x;
 	p->y = r2*r3 + p->y;
 	p->distancia = r3;
-	printf("vector final: %f --- %f\n", p->x, p->y);
+	//printf("vector final: %f --- %f\n", p->x, p->y);
 	}
 
 void init_Foton(Foton *p, int row, int col, int distMax){
@@ -88,11 +94,16 @@ void init_Foton(Foton *p, int row, int col, int distMax){
 	p->coord_x = 0;
 	p->coord_y = 0;
 	}
-void absorcion(Foton *p, int row, int col, Casilla **tablero){
+int absorcion(Foton *p, int row, int col, Casilla **tablero){
 	p->distMax = p->distMax-p->distancia;
 	tablero[p->coord_x][p->coord_y].data++;
 	vector_dist(p, tablero);
-	assign_coord(tablero, p);
+	if(assign_coord(tablero, p)==0){
+		return 0;
+		}
+	else{
+		return 1;
+		}
 	
 	
 	}
@@ -111,18 +122,13 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 	int nFotones = -1, cX, cY, auxDist;
 	float auxDelta;
 	flags = 0;
-	printf("dentro opt arg antes del while uwu\n");
 	while ((opt = getopt(argc, argv, "n:L:X:Y:d:b")) != -1) {
-		printf("dentro while\n");
 		strcpy(aux3,"\0");
-		printf("owo\n");
 		switch (opt) {
 			case 'b'://se busca el flag -b, en caso de ser encontrado se setea el valor flags = 1, no se considera lo que se ingrese despues del flag -m
-			   printf("caso b\n");
 			   flags = 1;
 			   break;
 			case 'n': //se busca el flag -n, cantidad de fotones
-			   printf("caso n, %s\n", optarg);
 			   nFotones = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && nFotones==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
 					fprintf(stderr, "Uso correcto: %s [-n nfotones] [-b]\n", argv[0]);
@@ -131,7 +137,6 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 			   //printf("optarg: %s\n", optarg);
 			   break;
 			case 'L': //se busca el flag -L, distancia maxima foton
-			   printf("caso L\n");
 			   auxDist = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && auxDist==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
 					fprintf(stderr, "Uso correcto: %s [-L distMax] [-b]\n", argv[0]);
@@ -149,7 +154,6 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 			   //printf("optarg: %s\n", optarg);
 			   break;
 			case 'Y': //se busca el flag -h
-				printf("caso Y\n");
 			   cY = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && cY==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
 					fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n", argv[0]);
@@ -158,7 +162,6 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 			   //printf("optarg: %s\n", optarg);
 			   break;
 			case 'd': //se busca el flag -d, delta entre casillas de la grilla
-				printf("caso d\n");
 				printf("%s\n", optarg);
 			   auxDelta = atof(optarg);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && auxDelta==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
@@ -267,14 +270,31 @@ void printTabla(Casilla **tabla, int row, int col, int dist, int flag){
 				}
 		}
 	}
-	
-void *uwu(Foton *f){
-	printf("dentro de hebra %d\n", f->distMax);
+
+void owo(){
+	printf("holi c:\n" );
+	}
+
+void *uwu(void *f){
+	int estado=1;
+	Foton *foton = (Foton*)malloc(sizeof(Foton*));
+	foton = f;
+	printf("dentro de hebra %d\n", foton->distMax);
+	owo();
+	printf("dato tabla: %d\n", tablaE[0][0].row);
+	while(estado==1){
+		printf("absorcion: \n");
+		estado = absorcion(foton, tablaE[0][0].row, tablaE[0][0].col, tablaE);
+		if(estado == 1){
+			printf("continuar...\n");
+			}
+		}
+	printTabla(tablaE, tablaE[0][0].row, tablaE[0][0].col, tablaE[0][0].dist, 0);
 	return NULL;
 	}
 
 int main(int argc, char *argv[]){
-	Casilla **tabla;
+	//Casilla **tabla;
 	Foton **f;
 	time_t t;
 	pthread_t *hebras;
@@ -289,24 +309,24 @@ int main(int argc, char *argv[]){
 		f[i] = (Foton*)malloc(sizeof(Foton));
 		init_Foton(f[i], x, y, distMax);
 		}
+	printf("despues de get arguments uwu \n");
+	darMemoria(&tablaE, x, y);
+	initTabla(tablaE, x, y, delta);
+	printTabla(tablaE, x, y, delta, 1);
+	init_Foton(f[0],x, y, distMax);
+	printf("Posicion foton: (%f-%f)\n", f[0]->x, f[0]->y);
+	vector_dist(f[0], tablaE);
+	printf("Distancia foton %f\n", f[0]->distancia);
+	assign_coord(tablaE, f[0]);
 	while(cont<numFotones){
 		pthread_create(&hebras[cont], NULL, uwu, (void *)f[cont]);
 		cont++;
 		}
-	printf("despues de get arguments uwu \n");
-	darMemoria(&tabla, x, y);
-	initTabla(tabla, x, y, delta);
-	printTabla(tabla, x, y, delta, 1);
-	init_Foton(f[0],x, y, distMax);
-	printf("Posicion foton: (%f-%f)\n", f[0]->x, f[0]->y);
-	vector_dist(f[0], tabla);
-	printf("Distancia foton %f\n", f[0]->distancia);
-	assign_coord(tabla, f[0]);
-	for(int i = 0; i<3;i++){
-		//srand((unsigned) time(&t));
-		absorcion(f[0], x, y, tabla);
-		
+	cont = 0;
+	while(cont<numFotones){
+		pthread_join(hebras[cont], NULL);
+		cont++;
 		}
-	printTabla(tabla, x, y, delta, 0);
+	printTabla(tablaE, x, y, delta, 0);
 	return 0;
 }
