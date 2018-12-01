@@ -78,11 +78,17 @@ void vector_dist(Foton *p, Casilla **tabla){
 	rr = 1-r;
 	printf("1-r: %f\n", rr);
 	r3 = -(log(rr));
+	if(r3 <= p->distMax){
+		p->distancia = r3;
+		}
+	else{
+		p->distancia = p->distMax;
+		}
 	//printf("log: %f\n", r3);
 	//printf("vector actual: %f --- %f\n", r1*r3, r2*r3);
 	p->x = r1*r3 + p->x;
 	p->y = r2*r3 + p->y;
-	p->distancia = r3;
+	
 	//printf("vector final: %f --- %f\n", p->x, p->y);
 	}
 
@@ -98,7 +104,7 @@ int absorcion(Foton *p, int row, int col, Casilla **tablero){
 	p->distMax = p->distMax-p->distancia;
 	tablero[p->coord_x][p->coord_y].data++;
 	vector_dist(p, tablero);
-	if(assign_coord(tablero, p)==0){
+	if(assign_coord(tablero, p)==0||p->distMax <=0){
 		return 0;
 		}
 	else{
