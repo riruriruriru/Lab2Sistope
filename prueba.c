@@ -337,7 +337,7 @@ int main(int argc, char *argv[]){
 	getArguments(argc, argv, &numFotones, &distMax, &x, &y, &delta, &flag);
 	
 	//Se iniciliza la matriz de mutex
-	mutex = (pthread_mutex_t**)malloc(sizeof(pthread_mutex_t)*x);
+	mutex = (pthread_mutex_t**)malloc(sizeof(pthread_mutex_t*)*x);
 	for(int i=0;i<x;i++){
 		mutex[i] = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t)*y);
 	}
