@@ -11,6 +11,7 @@
 #include <pthread.h>
 
 
+pthread_mutex_t mutex;
 
 //FALTA COMPROBAR CUANDO UN FOTON SE SALE DE LA GRILLA 
 typedef struct Casilla{
@@ -102,7 +103,11 @@ void init_Foton(Foton *p, int row, int col, int distMax){
 	}
 int absorcion(Foton *p, int row, int col, Casilla **tablero){
 	p->distMax = p->distMax-p->distancia;
+	//Seccion critica
+	pthread_mutex_lock(&mutex);
 	tablero[p->coord_x][p->coord_y].data++;
+	pthread_mutex_unlock(&mutex);
+	//Fin seccion critica
 	vector_dist(p, tablero);
 	if(assign_coord(tablero, p)==0||p->distMax <=0){
 		return 0;
@@ -113,8 +118,14 @@ int absorcion(Foton *p, int row, int col, Casilla **tablero){
 	
 	
 	}
-void difusion(Foton *p){
-	
+int difusion(Foton *p, Casilla **tablero){
+		vector_dist(p, tablero);
+		if(assign_coord(tablero, p)==0||p->distMax <=0){
+		return 0;
+			}
+		else{
+			return 1;
+		}
 	}
 
 void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x, int *y, float *delta, int *flag){
@@ -283,14 +294,23 @@ void owo(){
 
 void *uwu(void *f){
 	int estado=1;
+	int aleatorio = 0;
+	srand(time(NULL));
 	Foton *foton = (Foton*)malloc(sizeof(Foton*));
 	foton = f;
 	printf("dentro de hebra %d\n", foton->distMax);
 	owo();
 	printf("dato tabla: %d\n", tablaE[0][0].row);
 	while(estado==1){
-		printf("absorcion: \n");
-		estado = absorcion(foton, tablaE[0][0].row, tablaE[0][0].col, tablaE);
+		aleatorio = rand()%2;
+		if (aleatorio == 0){
+			printf("absorcion: \n");
+			estado = absorcion(foton, tablaE[0][0].row, tablaE[0][0].col, tablaE);
+		}
+		if (aleatorio == 1){
+			printf("difucion: \n");
+			estado = difusion(foton,tablaE);
+		}
 		if(estado == 1){
 			printf("continuar...\n");
 			}
@@ -300,6 +320,7 @@ void *uwu(void *f){
 	}
 
 int main(int argc, char *argv[]){
+	pthread_mutex_init(&mutex,NULL);
 	//Casilla **tabla;
 	Foton **f;
 	time_t t;
