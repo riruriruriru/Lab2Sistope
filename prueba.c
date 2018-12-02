@@ -210,7 +210,7 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 		fprintf(stderr, "Usage: %s [-h nFotones] [-m]\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
 		exit(EXIT_FAILURE);
 		}
-	if(cX%2!=0 || cY%2 !=0){
+	if(cX%2!=0 || cY%2 !=0 || cX <= 0 || cY <= 0){
 		fprintf(stderr, "Usage: %s [-h nFotones] [-m]\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
 		exit(EXIT_FAILURE);
 		}
