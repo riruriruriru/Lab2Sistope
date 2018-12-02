@@ -28,6 +28,7 @@ typedef struct Casilla{
 	}Casilla;
 
 typedef struct Foton{
+	int id;
 	float x;
 	float y;
 	int coord_x;
@@ -93,7 +94,8 @@ void vector_dist(Foton *p, Casilla **tabla){
 	//printf("vector final: %f --- %f\n", p->x, p->y);
 	}
 
-void init_Foton(Foton *p, int row, int col, int distMax){
+void init_Foton(Foton *p, int row, int col, int distMax, int id){
+	p->id = id;
 	p->x = 0;
 	p->y = 0;
 	p->distancia = 0;
@@ -304,6 +306,7 @@ void *uwu(void *f){
 	owo();
 	printf("dato tabla: %d\n", tablaE[0][0].row);
 	while(estado==1){
+		printf("Hola soy la hebra %d\n",foton->id);
 		aleatorio = rand()%2;
 		if (aleatorio == 0){
 			printf("absorcion: \n");
@@ -317,6 +320,7 @@ void *uwu(void *f){
 			printf("continuar...\n");
 			}
 		}
+	printf("Soy la hebra %d y mori\n",foton->id);
 	printTabla(tablaE, tablaE[0][0].row, tablaE[0][0].col, tablaE[0][0].dist, 0);
 	return NULL;
 	}
@@ -346,17 +350,17 @@ int main(int argc, char *argv[]){
 	
 	
 	
-	hebras = (pthread_t*)malloc(numFotones*sizeof(pthread_t*)); 
+	hebras = (pthread_t*)malloc(numFotones*sizeof(pthread_t)); 
 	f = (Foton**)malloc(numFotones*sizeof(Foton*));
 	for(int i=0;i<numFotones;i++){
 		f[i] = (Foton*)malloc(sizeof(Foton));
-		init_Foton(f[i], x, y, distMax);
+		init_Foton(f[i], x, y, distMax,i);
 		}
 	printf("despues de get arguments uwu \n");
 	darMemoria(&tablaE, x, y);
 	initTabla(tablaE, x, y, delta);
 	printTabla(tablaE, x, y, delta, 1);
-	init_Foton(f[0],x, y, distMax);
+	init_Foton(f[0],x, y, distMax,0);
 	printf("Posicion foton: (%f-%f)\n", f[0]->x, f[0]->y);
 	vector_dist(f[0], tablaE);
 	printf("Distancia foton %f\n", f[0]->distancia);
