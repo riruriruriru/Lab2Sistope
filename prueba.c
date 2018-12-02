@@ -11,7 +11,7 @@
 #include <pthread.h>
 
 
-pthread_mutex_t mutex;
+pthread_mutex_t **mutex;
 
 //FALTA COMPROBAR CUANDO UN FOTON SE SALE DE LA GRILLA 
 typedef struct Casilla{
@@ -103,10 +103,12 @@ void init_Foton(Foton *p, int row, int col, int distMax){
 	}
 int absorcion(Foton *p, int row, int col, Casilla **tablero){
 	p->distMax = p->distMax-p->distancia;
-	//Seccion critica
-	pthread_mutex_lock(&mutex);
+	//Inicio seccion critica
+	//Se bloquea la casilla donde se encuentra el foton actual
+	pthread_mutex_lock(&mutex[p->coord_x][p->coord_y]);
 	tablero[p->coord_x][p->coord_y].data++;
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&mutex[p->coord_x][p->coord_y]);
+	//Se desbloquea la casilla
 	//Fin seccion critica
 	vector_dist(p, tablero);
 	if(assign_coord(tablero, p)==0||p->distMax <=0){
@@ -320,7 +322,6 @@ void *uwu(void *f){
 	}
 
 int main(int argc, char *argv[]){
-	pthread_mutex_init(&mutex,NULL);
 	//Casilla **tabla;
 	Foton **f;
 	time_t t;
@@ -330,6 +331,21 @@ int main(int argc, char *argv[]){
 	srand((unsigned) time(&t));
 	printf("antes get arguments\n");
 	getArguments(argc, argv, &numFotones, &distMax, &x, &y, &delta, &flag);
+	
+	//Se iniciliza la matriz de mutex
+	mutex = (pthread_mutex_t**)malloc(sizeof(pthread_mutex_t)*x);
+	for(int i=0;i<x;i++){
+		mutex[i] = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t)*y);
+	}
+	for(int i = 0; i<x; i++){
+		for(int j = 0; j<y; j++){
+			pthread_mutex_init(&mutex[i][j],NULL);
+		}
+	}	
+	
+	
+	
+	
 	hebras = (pthread_t*)malloc(numFotones*sizeof(pthread_t*)); 
 	f = (Foton**)malloc(numFotones*sizeof(Foton*));
 	for(int i=0;i<numFotones;i++){
