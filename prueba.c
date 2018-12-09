@@ -12,7 +12,7 @@
 
 
 pthread_mutex_t **mutex;
-FILE *archivo_salida;
+
 typedef struct Casilla{
 	float dist;
 	int row;
@@ -340,7 +340,7 @@ int main(int argc, char *argv[]){
 	Foton **f;
 	char *out1, *out2, *out3, *out4;
 	char *aux, *aux1, *aux2;
-
+	FILE *archivo_salida;
 	time_t t;
 	pthread_t *hebras;
 	archivo_salida = fopen("salida.txt", "w");
@@ -354,7 +354,7 @@ int main(int argc, char *argv[]){
 	aux1 = (char *)malloc(5*sizeof(char));
 	aux2 = (char *)malloc(5*sizeof(char));
 	out2 = (char *)malloc(5*sizeof(char));
-	out3 = (char *)malloc(15*sizeof(char));
+	out3 = (char *)malloc(20*sizeof(char));
 	out4 = (char *)malloc(5*sizeof(char));
 	//Se iniciliza la matriz de mutex
 	mutex = (pthread_mutex_t**)malloc(sizeof(pthread_mutex_t*)*x);
@@ -398,25 +398,27 @@ int main(int argc, char *argv[]){
 	for(int i = y-1;i>=0;i--){
 		for(int j=0;j<x;j++){
 			printf("dato: %d\n", tablaE[j][i].data);
-			sprintf(out4, "%s%d", " ", tablaE[j][i].data);
-			strcpy(aux, out4);
+			sprintf(out4, "%s%d ", " ", tablaE[j][i].data);
 			strcat(out3, "< ");
 			strcat(out3, out4);
+			strcpy(out4, " ");
+			strcat(out3, "[");
+			sprintf(out4, "%s%d", " ", abs(i+1-y));
+			strcat(out3, out4);
+			strcpy(out4, " ");
+			strcat(out3, "]");
 			strcat(out3, "[");
 			sprintf(out4, "%s%d", " ", j);
 			strcat(out3, out4);
+			strcpy(out4, " ");
 			strcat(out3, "]");
-			strcat(out3, "[");
-			sprintf(out4, "%s%d", " ", i);
-			strcat(out3, out4);
-			strcat(out3, "]");
-			strcat(out3, ">\n");
+			strcat(out3, ">\r\n");
 			printf("STRING A IMPRIMIR: %s\n", out3);
-			fwrite(out3, 256, sizeof(out3), archivo_salida);
-			strcpy(out3,"\0");
+			fwrite(out3, 30, sizeof(out3), archivo_salida);
+			strcpy(out3," ");
 			}
 		}
-	fwrite("UWUW", 256, sizeof(char), archivo_salida);
+	printf("cerrando archivo...\n");
 	fclose(archivo_salida);
 	return 0;
 }
