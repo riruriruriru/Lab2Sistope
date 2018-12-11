@@ -395,15 +395,15 @@ int main(int argc, char *argv[]){
 		}
 	printTabla(tablaE, x, y, delta, 0);
 	printf("imprimiendo archivo salida...\n");
-	for(int i = y-1;i>=0;i--){
-		for(int j=0;j<x;j++){
+	for(int i = 0;i<x;i++){
+		for(int j=0;j<y;j++){
 			printf("dato: %d\n", tablaE[j][i].data);
 			sprintf(out4, "%s%d ", " ", tablaE[j][i].data);
-			strcat(out3, "< ");
+			strcat(out3, "<");
 			strcat(out3, out4);
 			strcpy(out4, " ");
 			strcat(out3, "[");
-			sprintf(out4, "%s%d", " ", abs(i+1-y));
+			sprintf(out4, "%s%d", " ", i);
 			strcat(out3, out4);
 			strcpy(out4, " ");
 			strcat(out3, "]");
@@ -414,8 +414,9 @@ int main(int argc, char *argv[]){
 			strcat(out3, "]");
 			strcat(out3, ">\r\n");
 			printf("STRING A IMPRIMIR: %s\n", out3);
-			fwrite(out3, 30, sizeof(out3), archivo_salida);
-			strcpy(out3," ");
+			fprintf(archivo_salida,"%s",out3);
+			//fwrite(out3, 30, sizeof(out3), archivo_salida);
+			strcpy(out3,"");
 			}
 		}
 	printf("cerrando archivo...\n");
