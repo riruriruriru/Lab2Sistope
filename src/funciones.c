@@ -1,3 +1,7 @@
+#include "casilla.h"
+#include "foton.h"
+#include "funciones.h"
+#include "shared.h"
 #include <stdio.h>
 #include <dirent.h>
 #include <string.h>
@@ -8,36 +12,9 @@
 #include <pthread.h>
 #include <math.h>
 #include <time.h>
-#include <pthread.h>
 
 
-pthread_mutex_t **mutex;
-
-typedef struct Casilla{
-	float dist;
-	int row;
-	int col;
-	int data;
-	float infX;
-	float supX;
-	float infY;
-	float supY;
-	int t_row;
-	int t_col;
-	}Casilla;
-
-typedef struct Foton{
-	int flag;
-	int id;
-	float x;
-	float y;
-	int coord_x;
-	int coord_y;
-	float distancia;
-	int distMax;
-	}Foton;
-
-extern Casilla **tablaE = NULL;
+Casilla **tablaE = NULL;
 
 float random_float( float min, float max ){
     float range = rand() / (float) RAND_MAX; /* [0, 1.0] */
@@ -48,18 +25,20 @@ int assign_coord(Casilla **tabla, Foton *p){
 	int i = 0, j = 0;
 	for(i = 0; i<tabla[0][0].t_row; i++){
 		for(j = 0;j<tabla[0][0].t_col;j++){
-			if(p->x>=tabla[i][j].infX && p->x<=tabla[i][j].supX && p->y>=tabla[i][j].infY &&p->y<=tabla[i][j].supY){
-				p->coord_x = j;
-				p->coord_y = i;
-				printf("i-j -> %d %d\n", i, j);
-				//printf("j-i -> %d %d\n", j, i);
-				printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]\n", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
+			if(p->x >= tabla[i][j].infX && p->x <= tabla[i][j].supX && p->y >= tabla[i][j].infY &&p->y <= tabla[i][j].supY){
+				p->coord_x = i;
+				p->coord_y = j;
+				/*if (p->flag == 1){
+					printf("Nuevas coordenadas\n");
+					printf("y: %d x: %d\n", j, i);
+					printf("[Xinf: %.2f Xsup: %.2f Yinf: %.2f Ysup: %.2f]\n", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
+				}*/
 				return 1;
-				}
 			}
 		}
-	return 0;
 	}
+	return 0;
+}
 	
 
 
@@ -78,7 +57,7 @@ void vector_dist(Foton *p, Casilla **tabla){
 	//printf("modulo vector: %f\n", sqrt(r1*r1 + r2*r2));
 	//printf("x: %f - y: %f\n", r1, r2);
 	rr = 1-r;
-	printf("1-r: %f\n", rr);
+	//printf("1-r: %f\n", rr);
 	r3 = -(log(rr));
 	if(r3 <= p->distMax){
 		p->distancia = r3;
@@ -103,29 +82,51 @@ void init_Foton(Foton *p, int row, int col, int distMax, int id, int flag){
 	p->coord_x = 0;
 	p->coord_y = 0;
 	p->flag = flag;
-	}
+}
+	
 int absorcion(Foton *p, int row, int col, Casilla **tablero){
 	p->distMax = p->distMax-p->distancia;
 	//Inicio seccion critica
 	//Se bloquea la casilla donde se encuentra el foton actual
 	pthread_mutex_lock(&mutex[p->coord_x][p->coord_y]);
+	if (p->flag == 1){
+		printf("Absorcion: foton n°%d\n",p->id);
+		if(p->distMax <= 0){
+			printf("Foton n°%d agoto distancia ultima absorcion\n",p->id);
+		}
+		printf("Foton n°%d agrega energia en casilla y: %d x: %d\n\n",p->id,p->coord_y,p->coord_x);
+	}
 	tablero[p->coord_x][p->coord_y].data++;
 	pthread_mutex_unlock(&mutex[p->coord_x][p->coord_y]);
 	//Se desbloquea la casilla
 	//Fin seccion critica
 	vector_dist(p, tablero);
-	if(assign_coord(tablero, p)==0||p->distMax <=0){
+	if (p->distMax <= 0){
 		return 0;
-		}
+	}
+	else if(assign_coord(tablero, p)==0){
+		return 0;
+	}
 	else{
 		return 1;
-		}
-	
-	
 	}
+	
+	
+}
 int difusion(Foton *p, Casilla **tablero){
+		if (p->flag == 1){
+				printf("Difusion: foton n°%d\n\n",p->id);
+		}
+		p->distMax = p->distMax-p->distancia;
 		vector_dist(p, tablero);
-		if(assign_coord(tablero, p)==0||p->distMax <=0){
+		if(p->distMax <=0){
+			if (p->flag == 1){
+				printf("Foton n°%d agoto distancia se absorve en posicion actual\n",p->id);
+			}
+			p->distMax = p->distMax+p->distancia;
+			return 2;
+		}
+		else if(assign_coord(tablero, p)==0){
 		return 0;
 			}
 		else{
@@ -148,6 +149,7 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 		strcpy(aux3,"\0");
 		switch (opt) {
 			case 'b'://se busca el flag -b, en caso de ser encontrado se setea el valor flags = 1, no se considera lo que se ingrese despues del flag -m
+			   printf("Bandera activada, se muestra detalle de los fotones\n\n");
 			   flags = 1;
 			   break;
 			case 'n': //se busca el flag -n, cantidad de fotones
@@ -167,7 +169,7 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 			   //printf("optarg: %s\n", optarg);
 			   break;
 			case 'X': //se busca el flag -X, dimension X de la grilla 
-			   printf("caso X\n");
+			   //printf("caso X\n");
 			   cX = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && cX==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
 					fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n", argv[0]);
@@ -184,7 +186,7 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 			   //printf("optarg: %s\n", optarg);
 			   break;
 			case 'd': //se busca el flag -d, delta entre casillas de la grilla
-				printf("%s\n", optarg);
+				//printf("%s\n", optarg);
 			   auxDelta = atof(optarg);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && auxDelta==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
 					fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n", argv[0]);
@@ -239,9 +241,9 @@ void initTabla(Casilla **tabla, int row, int col, float dist){
 	float alto, ancho;
 	alto = dist*row/2;
 	ancho = dist*col/2;
-	printf("radio: %f\n", alto);
+	//printf("radio: %f\n", alto);
 	float iAlto = -alto, iAncho = -ancho;
-	printf("alto %f - ancho %f\n", alto, ancho);
+	//printf("alto %f - ancho %f\n", alto, ancho);
 	for(i=0;i<row;i++){
 		for(j=0;j<col;j++){
 			tabla[i][j].dist = dist;
@@ -293,111 +295,70 @@ void printTabla(Casilla **tabla, int row, int col, int dist, int flag){
 		}
 	}
 
-void owo(){
-	printf("holi c:\n" );
-	}
-
-void *uwu(void *f){
+void *transferenciaRadiactiva(void *f){
 	int estado=1;
 	int aleatorio = 0;
 	srand(time(NULL));
 	Foton *foton = (Foton*)malloc(sizeof(Foton*));
 	foton = f;
-	printf("dentro de hebra %d\n", foton->distMax);
-	owo();
-	printf("dato tabla: %d\n", tablaE[0][0].row);
+	//printf("dentro de hebra %d\n", foton->distMax);
+	//owo();
+	//printf("dato tabla: %d\n", tablaE[0][0].row);
 	while(estado==1){
-		if(foton->flag==1){
-			printf("Hola soy la hebra %d\n",foton->id);
-		}
 		aleatorio = rand()%2;
 		if (aleatorio == 0){
-			if(foton->flag==1){
+			/*if(foton->flag==1){
 				printf("absorcion: \n");
-			}
+			}*/
 			estado = absorcion(foton, tablaE[0][0].row, tablaE[0][0].col, tablaE);
 		}
 		if (aleatorio == 1){
-			if(foton->flag==1){
+			/*if(foton->flag==1){
 				printf("difusion: \n");
-			}
+			}*/
 			estado = difusion(foton,tablaE);
 		}
-		if(estado == 1 && foton->flag == 1){
-			printf("continuar...\n");
-			}
-		else if(estado == 0 && foton->flag == 1){
-			printf("Soy hebra %d y me muero uwu\n", foton->id);
-			}
-			
+		if(estado == 0){
+				if (foton -> distMax <=0){
+					if(foton->flag == 1){
+						printf("Fin foton n°%d\n\n",foton->id);
+					}
+					
+				}
+
+				else{
+					if(foton->flag == 1){
+						printf("Foton n°%d fuera de rango\n",foton->id);
+						printf("Fin foton n°%d\n\n",foton->id);
+					}
+				}
+				
 		}
+		if(estado == 2){
+			absorcion(foton, tablaE[0][0].row, tablaE[0][0].col, tablaE);
+			if(foton->flag == 1){
+				printf("Fin foton n°%d\n\n",foton->id);
+			}
+		}
+			
+	}
 	printTabla(tablaE, tablaE[0][0].row, tablaE[0][0].col, tablaE[0][0].dist, 0);
 	return NULL;
 	}
 
-int main(int argc, char *argv[]){
-	//Casilla **tabla;
-	Foton **f;
+void crearSalida(Casilla **tablaE, int x, int y){
 	char *out1, *out2, *out3, *out4;
-	char *aux, *aux1, *aux2;
 	FILE *archivo_salida;
-	time_t t;
-	pthread_t *hebras;
 	archivo_salida = fopen("salida.txt", "w");
-	int numFotones, distMax, x, y, flag=0, cont=0;
-	float delta;
-	srand((unsigned) time(&t));
-	printf("antes get arguments\n");
-	getArguments(argc, argv, &numFotones, &distMax, &x, &y, &delta, &flag);
 	out1 = (char *)malloc(5*sizeof(char));
-	aux = (char *)malloc(5*sizeof(char));
-	aux1 = (char *)malloc(5*sizeof(char));
-	aux2 = (char *)malloc(5*sizeof(char));
 	out2 = (char *)malloc(5*sizeof(char));
 	out3 = (char *)malloc(20*sizeof(char));
 	out4 = (char *)malloc(5*sizeof(char));
-	//Se iniciliza la matriz de mutex
-	mutex = (pthread_mutex_t**)malloc(sizeof(pthread_mutex_t*)*x);
-	for(int i=0;i<x;i++){
-		mutex[i] = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t)*y);
-	}
-	for(int i = 0; i<x; i++){
-		for(int j = 0; j<y; j++){
-			pthread_mutex_init(&mutex[i][j],NULL);
-		}
-	}	
-	
-	
-	
 	strcpy(out1, "<");
 	strcpy(out2, "0\n>");
-	strcpy(aux1, "[");
-	strcpy(aux2, "[");
-	hebras = (pthread_t*)malloc(numFotones*sizeof(pthread_t)); 
-	f = (Foton**)malloc(numFotones*sizeof(Foton*));
-	for(int i=0;i<numFotones;i++){
-		f[i] = (Foton*)malloc(sizeof(Foton));
-		init_Foton(f[i], x, y, distMax,i, flag);
-		}
-	printf("despues de get arguments uwu \n");
-	darMemoria(&tablaE, x, y);
-	initTabla(tablaE, x, y, delta);
-	printTabla(tablaE, x, y, delta, 1);
-	
-	while(cont<numFotones){
-		pthread_create(&hebras[cont], NULL, uwu, (void *)f[cont]);
-		cont++;
-		}
-	cont = 0;
-	while(cont<numFotones){
-		pthread_join(hebras[cont], NULL);
-		cont++;
-		}
-	printTabla(tablaE, x, y, delta, 0);
-	printf("imprimiendo archivo salida...\n");
 	for(int i = 0;i<x;i++){
 		for(int j=0;j<y;j++){
-			printf("dato: %d\n", tablaE[j][i].data);
+			//printf("dato: %d\n", tablaE[j][i].data);
 			sprintf(out4, "%s%d ", " ", tablaE[j][i].data);
 			strcat(out3, "<");
 			strcat(out3, out4);
@@ -413,13 +374,17 @@ int main(int argc, char *argv[]){
 			strcpy(out4, " ");
 			strcat(out3, "]");
 			strcat(out3, ">\r\n");
-			printf("STRING A IMPRIMIR: %s\n", out3);
+			//printf("STRING A IMPRIMIR: %s\n", out3);
 			fprintf(archivo_salida,"%s",out3);
 			//fwrite(out3, 30, sizeof(out3), archivo_salida);
 			strcpy(out3,"");
 			}
-		}
-	printf("cerrando archivo...\n");
+		
+	}
 	fclose(archivo_salida);
-	return 0;
+	free(out1);
+	free(out2);
+	free(out3);
+	free(out4);
+		
 }
