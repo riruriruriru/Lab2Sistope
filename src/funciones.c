@@ -15,24 +15,22 @@
 
 
 Casilla **tablaE = NULL;
-
+//Entradas: float con valor maximo y float con valor minimo
+//Salidas: float entre el rango establecido por las entradas
 float random_float( float min, float max ){
-    float range = rand() / (float) RAND_MAX; /* [0, 1.0] */
-    return min + range * (max - min);      /* [min, max] */
+    float range = rand() / (float) RAND_MAX; 
+    return min + range * (max - min); 
 	}
-
+//Entradas: estructura Casilla y estructura foton
+//Revisa el vector de posición actual del foton y lo asigna a una grilla de la matriz de Casilla
+//Salida: int que indica si se pudo asignar una casilla válida o si el fotón cayó afuera de la matriz de Casilla
 int assign_coord(Casilla **tabla, Foton *p){
 	int i = 0, j = 0;
 	for(i = 0; i<tabla[0][0].t_row; i++){
 		for(j = 0;j<tabla[0][0].t_col;j++){
-			if(p->x >= tabla[i][j].infX && p->x <= tabla[i][j].supX && p->y >= tabla[i][j].infY &&p->y <= tabla[i][j].supY){
+			if(p->x >= tabla[i][j].infX && p->x < tabla[i][j].supX && p->y > tabla[i][j].infY &&p->y <= tabla[i][j].supY){ //se comprueba una casilla considerando como el eje x como [x[ (limite inferior cerrado, limite superior abierto) y el eje y como ]y] (limite inferior abierto, limite superior cerrado) 
 				p->coord_x = i;
 				p->coord_y = j;
-				/*if (p->flag == 1){
-					printf("Nuevas coordenadas\n");
-					printf("y: %d x: %d\n", j, i);
-					printf("[Xinf: %.2f Xsup: %.2f Yinf: %.2f Ysup: %.2f]\n", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
-				}*/
 				return 1;
 			}
 		}
@@ -41,38 +39,30 @@ int assign_coord(Casilla **tabla, Foton *p){
 }
 	
 
-
+//Entradas: estructura foton y casilla
+//Se genera un vector random con una distancia también aleatoria pero que no puede ser mayor a la distancia máxima que le queda por recorrer al fotón, se actualizan las coordenadas actuales del fotón en base al vector generado
+//Se modifican las coordenadas actuales del fotón según el vector resultante
 void vector_dist(Foton *p, Casilla **tabla){
 	float r1, r2, r3, r, rr, m;
-	//time_t t;
-	//srand((unsigned) time(&t));
 	r = (double)rand() / (double)RAND_MAX;
-	//printf("random: %f\n", r);
-	//srand((unsigned) time(&t));
-	r1 = cos(random());
+	r1 = cos(random());//se usan coordenadas polares para el vector
 	r2 = sin(random());
 	m = sqrt(r1*r1 + r2*r2);
 	r1 = r1/m;
 	r2 = r2/m;
-	//printf("modulo vector: %f\n", sqrt(r1*r1 + r2*r2));
-	//printf("x: %f - y: %f\n", r1, r2);
 	rr = 1-r;
-	//printf("1-r: %f\n", rr);
-	r3 = -(log(rr));
-	if(r3 <= p->distMax){
+	r3 = -(log(rr));//se calcula distancia, que siempre será positiva
+	if(r3 <= p->distMax){//se comprueba que no sea mayor a la distancia máxima
 		p->distancia = r3;
 		}
 	else{
-		p->distancia = p->distMax;
+		p->distancia = p->distMax;//si es mayor, la distancia se reduce y se iguala
 		}
-	//printf("log: %f\n", r3);
-	//printf("vector actual: %f --- %f\n", r1*r3, r2*r3);
-	p->x = r1*r3 + p->x;
-	p->y = r2*r3 + p->y;
+	p->x = r1*r3 + p->x;//se actualiza coordenada x
+	p->y = r2*r3 + p->y;//se actualiza coordenada y
 	
-	//printf("vector final: %f --- %f\n", p->x, p->y);
 	}
-
+//Se reciben datos ingresados por el usuario para inicializar la estructura fotón
 void init_Foton(Foton *p, int row, int col, int distMax, int id, int flag){
 	p->id = id;
 	p->x = 0;
@@ -83,7 +73,10 @@ void init_Foton(Foton *p, int row, int col, int distMax, int id, int flag){
 	p->coord_y = 0;
 	p->flag = flag;
 }
-	
+//Entradas: Estructuras fotón y casilla
+//El fotón correspondiente actualiza su distancia máxima e intenta ingresar a una casilla utilizando un mutex de una matriz de mutex con las mismas dimensiones que la matriz Casilla
+//Si logra entrar a su casilla, realiza absorción, sino se bloquea
+//Salidas: valor que indica si el fotón muere después de realizar esta absorción o continúa vivo	
 int absorcion(Foton *p, int row, int col, Casilla **tablero){
 	p->distMax = p->distMax-p->distancia;
 	//Inicio seccion critica
@@ -100,11 +93,11 @@ int absorcion(Foton *p, int row, int col, Casilla **tablero){
 	pthread_mutex_unlock(&mutex[p->coord_x][p->coord_y]);
 	//Se desbloquea la casilla
 	//Fin seccion critica
-	vector_dist(p, tablero);
+	vector_dist(p, tablero);//Se calcula inmediatamente un nuevo vector de distancia
 	if (p->distMax <= 0){
 		return 0;
 	}
-	else if(assign_coord(tablero, p)==0){
+	else if(assign_coord(tablero, p)==0){//Si con este nuevo vector de distancia el fotón se sale de la casilla, se retorna un 0 y el fotón muere
 		return 0;
 	}
 	else{
@@ -113,6 +106,9 @@ int absorcion(Foton *p, int row, int col, Casilla **tablero){
 	
 	
 }
+//Entradas: fotón y casilla
+//Funcionamiento: Se realiza una difusión en la casilla correspondiente y se calcula un nuevo vector de distancia
+//Salidas: int que indica si el fotón muere en base a su nuevo vector de distancias, si debería realizar una absorción en vez de difusión debido a que agotó su distancia máxima o si la difusión se realizó correctamente
 int difusion(Foton *p, Casilla **tablero){
 		if (p->flag == 1){
 				printf("Difusion: foton n°%d\n\n",p->id);
@@ -121,7 +117,7 @@ int difusion(Foton *p, Casilla **tablero){
 		vector_dist(p, tablero);
 		if(p->distMax <=0){
 			if (p->flag == 1){
-				printf("Foton n°%d agoto distancia se absorve en posicion actual\n",p->id);
+				printf("Foton n°%d agoto distancia se absorbe en posicion actual\n",p->id);
 			}
 			p->distMax = p->distMax+p->distancia;
 			return 2;
@@ -138,7 +134,7 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 	int flags, opt;
 	char *aux3;
 	aux3 = malloc(10*sizeof(char));
-	if(argc <7){//si se ingresa un numero de argumentos menor a 7, se finaliza la ejecucion del programa
+	if(argc <10){//si se ingresa un numero de argumentos menor a 7, se finaliza la ejecucion del programa
 		printf("Se ingreso un numero incorrecto de argumentos\n");
 		exit(EXIT_FAILURE);
 		}
@@ -155,7 +151,7 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 			case 'n': //se busca el flag -n, cantidad de fotones
 			   nFotones = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && nFotones==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
-					fprintf(stderr, "Uso correcto: %s [-n nfotones] [-b]\n", argv[0]);
+					fprintf(stderr, "Uso correcto: %s ...[-n nfotones]...\n", argv[0]);
 					exit(EXIT_FAILURE);
 				   }
 			   //printf("optarg: %s\n", optarg);
@@ -163,7 +159,7 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 			case 'L': //se busca el flag -L, distancia maxima foton
 			   auxDist = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && auxDist==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
-					fprintf(stderr, "Uso correcto: %s [-L distMax] [-b]\n", argv[0]);
+					fprintf(stderr, "Uso correcto: %s ...[-L distMax]...\n", argv[0]);
 					exit(EXIT_FAILURE);
 				   }
 			   //printf("optarg: %s\n", optarg);
@@ -172,7 +168,7 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 			   //printf("caso X\n");
 			   cX = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && cX==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
-					fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n", argv[0]);
+					fprintf(stderr, "Uso correcto: %s ...[-X dimension x]...\n", argv[0]);
 					exit(EXIT_FAILURE);
 				   }
 			   //printf("optarg: %s\n", optarg);
@@ -180,7 +176,7 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 			case 'Y': //se busca el flag -h
 			   cY = strtol(optarg, &aux3, 10);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && cY==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
-					fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n", argv[0]);
+					fprintf(stderr, "Uso correcto: %s ...[-Y dimension y]...\n", argv[0]);
 					exit(EXIT_FAILURE);
 				   }
 			   //printf("optarg: %s\n", optarg);
@@ -189,13 +185,13 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 				//printf("%s\n", optarg);
 			   auxDelta = atof(optarg);//se parsea el argumento ingresado junto al flag -h a entero
 			   if(optarg!=0 && auxDelta==0){//si no se ingresa un argumento junto a -h o si no se logra parsear el argumento ingresado, se considera como invalido
-					fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n", argv[0]);
+					fprintf(stderr, "Uso correcto: %s ...[-d delta]...\n", argv[0]);
 					exit(EXIT_FAILURE);
 				   }
 			   //printf("optarg: %s\n", optarg);
 			   break;
 		   default: /* '?' */
-			   fprintf(stderr, "Uso correcto: %s [-h nchild] [-m]\n",
+			   fprintf(stderr, "Uso correcto: %s [-n numero fotones][-L distMax][-X dimension x][-d delta][-b]\n",
 					   argv[0]);
 			   exit(EXIT_FAILURE);
 		   }
@@ -210,24 +206,24 @@ void getArguments(int argc, char *argv[], int *numFotones, int *distMax, int *x,
 	(*y) = cY;
 	(*delta) = auxDelta;
 	if(nFotones<=0){
-		fprintf(stderr, "Usage: %s [-h nFotones] [-m]\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
+		fprintf(stderr, "Usage: %s ...[-n nFotones]...\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
 		exit(EXIT_FAILURE);
 		}
 	if(cX%2!=0 || cY%2 !=0 || cX <= 0 || cY <= 0){
-		fprintf(stderr, "Usage: %s [-h nFotones] [-m]\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
+		fprintf(stderr, "Usage: %s ...[-X dimension mayor a 0 y par][-Y dimension mayor a 0 y par]...\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
 		exit(EXIT_FAILURE);
 		}
 	if(auxDelta<=0){
-		fprintf(stderr, "Usage: %s [-h nFotones] [-m]\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
+		fprintf(stderr, "Usage: %s ...[-d delta mayor a 0]...\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
 		exit(EXIT_FAILURE);
 		}
 	if(auxDist<=0){
-		fprintf(stderr, "Usage: %s [-h nFotones] [-m]\n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
+		fprintf(stderr, "Usage: %s [-L distMax mayor a 0]... \n", argv[0]); //si la cantidad de fotones es negativa, se retorna un error
 		exit(EXIT_FAILURE);
 		}
 
 }
-
+//Funcion que le da memoria a una matriz de estructuras casilla
 void darMemoria(Casilla ***tabla, int row, int col){
 	int i = 0;
 	*tabla = (Casilla**)malloc(row*sizeof(Casilla));
@@ -236,14 +232,15 @@ void darMemoria(Casilla ***tabla, int row, int col){
 		}
 	
 	}
+//Entradas: matriz de casillas, dimension x, dimension y, delta distancia
+//Procedimiento que inicializa una matriz de estructuras casilla segun los datos ingresados por el usuario
+//Salidas: valores actualizados de la matriz de casillas
 void initTabla(Casilla **tabla, int row, int col, float dist){
 	int i=0, j=0;
 	float alto, ancho;
 	alto = dist*row/2;
 	ancho = dist*col/2;
-	//printf("radio: %f\n", alto);
 	float iAlto = -alto, iAncho = -ancho;
-	//printf("alto %f - ancho %f\n", alto, ancho);
 	for(i=0;i<row;i++){
 		for(j=0;j<col;j++){
 			tabla[i][j].dist = dist;
@@ -269,9 +266,7 @@ void printTabla(Casilla **tabla, int row, int col, int dist, int flag){
 		for(i = 0; i<row; i++){
 			for(j=0;j<col;j++){
 					
-				//printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
-				//printf("[%f	%f]", tabla[i][j].infX, tabla[i][j].supX);
-				//printf("[	%f	]", tabla[i][j].infY);
+	
 				printf("[%d %d]", i, j);
 				}
 				printf("\n");
@@ -283,9 +278,7 @@ void printTabla(Casilla **tabla, int row, int col, int dist, int flag){
 		for(i = 0; i<row; i++){
 			for(j=0;j<col;j++){
 					
-				//printf("[x1: %.2f x2: %.2f y1: %.2f y2: %.2f]", tabla[i][j].infX, tabla[i][j].supX, tabla[i][j].infY, tabla[i][j].supY);
-				//printf("[%f	%f]", tabla[i][j].infX, tabla[i][j].supX);
-				//printf("[	%f	]", tabla[i][j].infY);
+			
 				printf("[%d]", tabla[i][j].data);
 				}
 				printf("\n");
@@ -294,29 +287,24 @@ void printTabla(Casilla **tabla, int row, int col, int dist, int flag){
 				}
 		}
 	}
-
+//Entrada: void * al parámetro que se le entrega a la hebra en pthread_create
+//Funcionamiento: La hebra que ejecute esta función entra en un ciclo while en el cual ejecutará absorciones y difusiones hasta que agote su distancia máxima o se salga de la matriz de casillas
 void *transferenciaRadiactiva(void *f){
 	int estado=1;
 	int aleatorio = 0;
 	srand(time(NULL));
 	Foton *foton = (Foton*)malloc(sizeof(Foton*));
 	foton = f;
-	//printf("dentro de hebra %d\n", foton->distMax);
-	//owo();
-	//printf("dato tabla: %d\n", tablaE[0][0].row);
+	
 	while(estado==1){
-		aleatorio = rand()%2;
+		aleatorio = rand()%2;//se decide si la accion sera difusion o absorcion
 		if (aleatorio == 0){
-			/*if(foton->flag==1){
-				printf("absorcion: \n");
-			}*/
-			estado = absorcion(foton, tablaE[0][0].row, tablaE[0][0].col, tablaE);
+			
+			estado = absorcion(foton, tablaE[0][0].row, tablaE[0][0].col, tablaE);//se actualiza el estado, provocando la muerte del foton en caso de que se cumplan las condiciones correspondientes
 		}
 		if (aleatorio == 1){
-			/*if(foton->flag==1){
-				printf("difusion: \n");
-			}*/
-			estado = difusion(foton,tablaE);
+			
+			estado = difusion(foton,tablaE);//se actualiza el estado del foton en caso de que este muera
 		}
 		if(estado == 0){
 				if (foton -> distMax <=0){
@@ -334,7 +322,7 @@ void *transferenciaRadiactiva(void *f){
 				}
 				
 		}
-		if(estado == 2){
+		if(estado == 2){//si el foton intento realizar una difusion pero su distancia maxima ya fue consumida, realiza una absorcion y luego muere
 			absorcion(foton, tablaE[0][0].row, tablaE[0][0].col, tablaE);
 			if(foton->flag == 1){
 				printf("Fin foton n°%d\n\n",foton->id);
@@ -342,10 +330,11 @@ void *transferenciaRadiactiva(void *f){
 		}
 			
 	}
-	printTabla(tablaE, tablaE[0][0].row, tablaE[0][0].col, tablaE[0][0].dist, 0);
+	//printTabla(tablaE, tablaE[0][0].row, tablaE[0][0].col, tablaE[0][0].dist, 0);
 	return NULL;
 	}
-
+//Entradas: matriz de casillas
+//Se crea un archivo de salida, se abre y se escribe una linea por cada posicion de la grilla indicando su valor, el cual inicialmente es 0 y se modificó con +1 por cada absorción
 void crearSalida(Casilla **tablaE, int x, int y){
 	char *out1, *out2, *out3, *out4;
 	FILE *archivo_salida;
